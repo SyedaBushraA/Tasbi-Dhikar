@@ -38,32 +38,24 @@ export function AdhanTestButtons({ volume, available, showFajr, testID }: AdhanT
   );
 
   const anyAvailable = available.standard || available.fajr;
+  const { playing } = playback;
 
-  if (playback.playing) {
-    return (
-      <AppButton
-        icon="stop"
-        label={t('prayerSettings.adhan.stop')}
-        onPress={stopAdhan}
-        fullWidth
-        testID={testID ? `${testID}-stop` : undefined}
-      />
-    );
-  }
-
+  // One button that changes, rather than another one in its place: a screen
+  // reader keeps its place when the test starts instead of jumping to the top.
   return (
     <View style={styles.buttons}>
       <AppButton
-        icon="play"
-        label={t('prayerSettings.adhan.test')}
+        icon={playing ? 'stop' : 'play'}
+        label={playing ? t('prayerSettings.adhan.stop') : t('prayerSettings.adhan.test')}
         onPress={() => {
-          playAdhan(available.standard ? 'standard' : 'fajr', volume);
+          if (playing) stopAdhan();
+          else playAdhan(available.standard ? 'standard' : 'fajr', volume);
         }}
         disabled={!anyAvailable}
         fullWidth
-        testID={testID ? `${testID}-play` : undefined}
+        testID={testID ? `${testID}-${playing ? 'stop' : 'play'}` : undefined}
       />
-      {showFajr && available.fajr && available.standard ? (
+      {!playing && showFajr && available.fajr && available.standard ? (
         <AppButton
           variant="secondary"
           icon="play-outline"

@@ -8,17 +8,23 @@ import { SPACING } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { PrayerLocation } from '@/types';
-import { formatCoordinate, isValidLatitude, isValidLongitude } from '@/utils/prayer';
+import {
+  formatCoordinate,
+  isValidLatitude,
+  isValidLongitude,
+  roundCoordinate,
+} from '@/utils/prayer';
 
 /** As long as a stored place name may be. */
 const MAX_NAME_LENGTH = 80;
 /** A listed city this close lends its country and time zone to the coordinates. */
 const NEAREST_CITY_MAX_KM = 100;
 
-// The decimal pad of the iPhone has no minus sign, which places south and west need.
+// South and west need a minus sign, which neither decimal pad offers: the
+// punctuation keyboard has it on iPhone, the numeric keypad on Android.
 const COORDINATE_KEYBOARD = Platform.select<KeyboardTypeOptions>({
   ios: 'numbers-and-punctuation',
-  default: 'decimal-pad',
+  default: 'numeric',
 });
 
 /** Accepts "17.38" as well as "17,38", with an optional sign. */
@@ -46,14 +52,19 @@ export function CoordinatesForm({ onSubmit, testID }: CoordinatesFormProps) {
   const [errors, setErrors] = useState({ latitude: false, longitude: false });
 
   function save(): void {
-    const latitude = parseCoordinate(latitudeText);
-    const longitude = parseCoordinate(longitudeText);
-    const latitudeBad = latitude === null || !isValidLatitude(latitude);
-    const longitudeBad = longitude === null || !isValidLongitude(longitude);
+    const typedLatitude = parseCoordinate(latitudeText);
+    const typedLongitude = parseCoordinate(longitudeText);
+    const latitudeBad = typedLatitude === null || !isValidLatitude(typedLatitude);
+    const longitudeBad = typedLongitude === null || !isValidLongitude(typedLongitude);
     setErrors({ latitude: latitudeBad, longitude: longitudeBad });
-    if (latitude === null || longitude === null || latitudeBad || longitudeBad) return;
+    if (typedLatitude === null || typedLongitude === null || latitudeBad || longitudeBad) return;
 
-    // Only to fill in the country and the time zone; the coordinates stay as entered.
+    // Kept no more precise than the calculation needs, like the position the
+    // phone reports, so only rounded coordinates are ever stored.
+    const latitude = roundCoordinate(typedLatitude);
+    const longitude = roundCoordinate(typedLongitude);
+
+    // Only to fill in the country and the time zone.
     const city = nearestCity({ latitude, longitude }, NEAREST_CITY_MAX_KM);
     const name =
       placeName.trim() ||

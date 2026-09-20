@@ -8,7 +8,12 @@ import { listDhikr } from '@/utils/dhikr';
 import { validateDhikrName, validateTarget } from '@/utils/validation';
 import type { DhikrNameError, TargetError } from '@/utils/validation';
 
-import { type PrayerActions, type PrayerServices, createPrayerActions } from './prayerActions';
+import {
+  type PrayerActionOptions,
+  type PrayerActions,
+  type PrayerServices,
+  createPrayerActions,
+} from './prayerActions';
 import type { AppStore } from './store';
 
 /** Device features the actions use. Injected so the logic can be tested without a phone. */
@@ -60,11 +65,19 @@ function reminderContent(language: LanguageCode): ReminderContent {
   };
 }
 
-export function createAppActions(store: AppStore, services: ActionServices): AppActions {
+export function createAppActions(
+  store: AppStore,
+  services: ActionServices,
+  options: PrayerActionOptions = {},
+): AppActions {
   let lastTapAt = 0;
 
   const settings = () => store.getState().settings;
-  const prayerActions = createPrayerActions(store, { ...services.prayer, now: services.now });
+  const prayerActions = createPrayerActions(
+    store,
+    { ...services.prayer, now: services.now },
+    options,
+  );
 
   const syncReminder = async (): Promise<void> => {
     const { reminder, language } = settings();

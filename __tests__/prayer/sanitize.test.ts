@@ -36,6 +36,7 @@ describe('sanitizePrayerSettings', () => {
       asrMethod: 'hanafi',
       adjustments: { fajr: 2, sunrise: 0, dhuhr: -1, asr: 0, maghrib: 3, isha: -5 },
       notifications: { fajr: true, dhuhr: false, asr: true, maghrib: true, isha: false },
+      alertsBlocked: true,
       adhanEnabled: true,
       adhan: { fajr: true, dhuhr: false, asr: false, maghrib: true, isha: true },
       fajrAdhanSeparate: false,

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 
 import { AppButton, AppText } from '@/components/ui';
 import { MAX_ADJUSTMENT, MIN_ADJUSTMENT } from '@/constants/prayer';
@@ -32,11 +32,22 @@ export const AdjustmentStepper = memo(function AdjustmentStepper({
   const value = adjustmentValue(minutes, t, n);
   const spokenValue = adjustmentValueLabel(minutes, t, tCount);
 
+  function step(next: number): void {
+    onChange(next);
+    // Android reads the live region below on its own; iOS has to be told.
+    if (Platform.OS === 'ios') {
+      AccessibilityInfo.announceForAccessibility(
+        `${name}, ${adjustmentValueLabel(next, t, tCount)}`,
+      );
+    }
+  }
+
   return (
     <View style={styles.stepper} testID={testID}>
       <View
         accessible
         accessibilityRole="text"
+        accessibilityLiveRegion="polite"
         accessibilityLabel={
           timeText ? `${name}, ${timeText}, ${spokenValue}` : `${name}, ${spokenValue}`
         }
@@ -62,7 +73,7 @@ export const AdjustmentStepper = memo(function AdjustmentStepper({
           icon="remove"
           label={t('prayerSettings.adjustments.earlier')}
           accessibilityLabel={t('prayerSettings.adjustments.a11y.earlier', { prayer: name })}
-          onPress={() => onChange(minutes - 1)}
+          onPress={() => step(minutes - 1)}
           disabled={minutes <= MIN_ADJUSTMENT}
           style={styles.button}
           testID={testID ? `${testID}-earlier` : undefined}
@@ -72,7 +83,7 @@ export const AdjustmentStepper = memo(function AdjustmentStepper({
           icon="add"
           label={t('prayerSettings.adjustments.later')}
           accessibilityLabel={t('prayerSettings.adjustments.a11y.later', { prayer: name })}
-          onPress={() => onChange(minutes + 1)}
+          onPress={() => step(minutes + 1)}
           disabled={minutes >= MAX_ADJUSTMENT}
           style={styles.button}
           testID={testID ? `${testID}-later` : undefined}

@@ -143,6 +143,29 @@ describe('ChoiceChips', () => {
     expect(screen.getByText('99')).toBeOnTheScreen();
   });
 
+  /* A group that cannot be used yet still says what is chosen; blanking the
+     selection would leave the user tapping at something that never answers. */
+  it('still shows the choice while it cannot be changed', async () => {
+    const onChange = jest.fn<void, [ThemePreference]>();
+    await renderWithStore(
+      <ChoiceChips
+        options={THEME_OPTIONS}
+        value="dark"
+        onChange={onChange}
+        accessibilityLabel={GROUP_LABEL}
+        disabled
+        testID="theme"
+      />,
+    );
+
+    expect(screen.getByTestId('theme-dark')).toBeChecked();
+    expect(screen.getByTestId('theme-light')).toBeDisabled();
+
+    fireEvent.press(screen.getByTestId('theme-light'));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it('keeps every chip above the smallest comfortable touch target', async () => {
     await renderWithStore(
       <ChoiceChips

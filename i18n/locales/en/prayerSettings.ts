@@ -3,8 +3,6 @@ export const prayerSettings = {
   methodTitle: 'Calculation method',
   asrTitle: 'Asr time',
   adjustmentsTitle: 'Manual adjustments',
-  notificationsTitle: 'Prayer notifications',
-  adhanTitle: 'Adhan',
   location: {
     title: 'Location',
     none: 'Prayer times are calculated for a place. No place is chosen yet.',
@@ -61,12 +59,15 @@ export const prayerSettings = {
     },
   },
   alerts: {
-    title: 'Prayer alerts',
+    title: 'Prayer notifications',
     intro: 'Choose what happens at each prayer time.',
     allPrayers: 'All prayers',
     mixed: 'Set one by one below',
     setEach: 'Set each prayer',
     needLocation: 'Set your location first.',
+    blocked: 'Your prayer notifications were turned off.',
+    blockedMessage:
+      'Notifications are no longer allowed for Tasbi, so nothing could arrive at prayer time. Allow notifications in the settings of your phone, then choose your prayer notifications again.',
     modes: {
       off: 'Off',
       notification: 'Notification',
@@ -75,30 +76,19 @@ export const prayerSettings = {
     a11y: {
       allGroup: 'Alert for all prayers',
       group: 'Alert for {prayer}',
+      option: '{mode} for {prayer}',
     },
   },
   notifications: {
-    intro: 'A notification at the time of each prayer you turn on.',
-    all: 'All prayers',
-    someOn: '{count} of {total} turned on',
-    needLocation: 'Set your location first.',
-    planNote:
-      'Notifications are planned {days} days ahead and refreshed every time you open Tasbi.',
     denied: 'Notifications are turned off for Tasbi.',
     deniedMessage:
       'To get prayer notifications, allow notifications for Tasbi in the settings of your phone.',
     failed: 'Prayer notifications could not be set up on this device.',
     openPhoneSettings: 'Open phone settings',
     exactTip:
-      'For alerts exactly on time, allow “Alarms & reminders” for Tasbi and turn off battery optimisation.',
+      'For notifications exactly on time, allow “Alarms & reminders” for Tasbi and turn off battery optimisation.',
   },
   adhan: {
-    master: 'Adhan',
-    masterDescription: 'Play the Adhan with your prayer notifications.',
-    forPrayer: '{prayer} Adhan',
-    needNotification: 'Turn on the {prayer} notification to hear the Adhan.',
-    separateFajr: 'Separate Fajr Adhan',
-    separateFajrDescription: 'Use the Fajr recording for Fajr.',
     notIncluded:
       'No Adhan recording is included in this version. Prayer notifications use the normal notification sound.',
     volume: 'Adhan volume',
@@ -110,5 +100,7 @@ export const prayerSettings = {
     stop: 'Stop',
     platformNote:
       'When Tasbi is closed, the Adhan plays as the notification sound, and your phone decides how long it plays. On iPhone that is up to 30 seconds.',
+    inAppOnlyNote:
+      'On this device the Adhan can only play while Tasbi is open. Prayer notifications use the normal notification sound.',
   },
 };

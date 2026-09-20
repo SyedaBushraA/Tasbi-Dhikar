@@ -11,6 +11,7 @@ import {
   isValidLatitude,
   isValidLongitude,
   methodDetails,
+  orderedPrayerNames,
 } from '@/utils/prayer';
 
 import {
@@ -138,6 +139,49 @@ describe('calculatePrayerDay', () => {
         expect(time === null || Number.isFinite(time)).toBe(true);
       }
     }
+  });
+});
+
+describe('orderedPrayerNames', () => {
+  const dayKey = '2026-09-20';
+
+  it('keeps the usual order of an ordinary day', () => {
+    const place = meridianPlace(dayKey);
+    const day = calculatePrayerDay(prayerSettings({ location: place }), place, dayKey);
+    expect(orderedPrayerNames(day)).toEqual(PRAYER_ORDER);
+  });
+
+  /* Inside the polar circles the library borrows times from the nearest day
+     that has them, which can leave a day out of order. The list has to follow
+     the clock, not the usual order of the names. */
+  it('puts times that fall out of the usual order in the order they happen', () => {
+    const ordered = orderedPrayerNames({
+      dayKey,
+      times: {
+        fajr: at(9, 20, 2, 30),
+        sunrise: at(9, 20, 3, 40),
+        dhuhr: at(9, 20, 12, 0),
+        asr: at(9, 20, 20, 15),
+        maghrib: at(9, 20, 19, 50),
+        isha: at(9, 20, 21, 5),
+      },
+    });
+    expect(ordered).toEqual(['fajr', 'sunrise', 'dhuhr', 'maghrib', 'asr', 'isha']);
+  });
+
+  it('leaves a time that does not exist in its usual place', () => {
+    const ordered = orderedPrayerNames({
+      dayKey,
+      times: {
+        fajr: null,
+        sunrise: at(9, 20, 3, 40),
+        dhuhr: at(9, 20, 12, 0),
+        asr: at(9, 20, 15, 30),
+        maghrib: null,
+        isha: at(9, 20, 21, 5),
+      },
+    });
+    expect(ordered).toEqual(PRAYER_ORDER);
   });
 });
 

@@ -1,11 +1,12 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/ui';
+import { AppText, Notice } from '@/components/ui';
 import { RADIUS, SPACING } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from '@/hooks/useTranslation';
 import type { ClockFormat, NextPrayer } from '@/types';
+import { toDayKey } from '@/utils/date';
 
 import { countdownLabel, formatPrayerTime, prayerNameKey, spokenCountdown } from './labels';
 
@@ -32,11 +33,16 @@ export const NextPrayerCard = memo(function NextPrayerCard({
   const translator = useTranslation();
   const { t } = translator;
 
-  if (!next) return null;
+  // A place where a time cannot be calculated must say so rather than show nothing.
+  if (!next) {
+    return <Notice message={t('prayer.noNextPrayer')} testID="prayer-no-next" />;
+  }
 
   const name = t(prayerNameKey(next.name));
   const time = formatPrayerTime(next.time, clockFormat, t);
   const countdown = countdownLabel(next.time, now, translator);
+  // After Isha the next prayer belongs to the next day, which the time alone does not say.
+  const tomorrow = next.dayKey > toDayKey(now);
 
   const title = theme.text('title');
   const timeStyle = {
@@ -48,11 +54,14 @@ export const NextPrayerCard = memo(function NextPrayerCard({
     <View
       accessible
       accessibilityRole="text"
-      accessibilityLabel={t('prayer.a11y.nextPrayer', {
-        prayer: name,
-        time,
-        countdown: spokenCountdown(next.time, now, translator),
-      })}
+      accessibilityLabel={[
+        t('prayer.a11y.nextPrayer', {
+          prayer: name,
+          time,
+          countdown: spokenCountdown(next.time, now, translator),
+        }),
+        ...(tomorrow ? [t('prayer.tomorrow')] : []),
+      ].join(', ')}
       style={[styles.card, { backgroundColor: colors.primarySoft }]}
       testID="prayer-next-card"
     >
@@ -76,6 +85,11 @@ export const NextPrayerCard = memo(function NextPrayerCard({
       <AppText variant="body" tone="muted" align="center">
         {countdown}
       </AppText>
+      {tomorrow ? (
+        <AppText variant="body" tone="muted" align="center" testID="prayer-next-tomorrow">
+          {t('prayer.tomorrow')}
+        </AppText>
+      ) : null}
     </View>
   );
 });

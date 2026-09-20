@@ -79,6 +79,26 @@ export function calculatePrayerDay(
 }
 
 /**
+ * The times of a day in the order they happen. Inside the polar circles the
+ * borrowed times are not always in the usual order, and a list that shows them
+ * from Fajr to Isha would then read wrongly. A time that does not exist keeps
+ * its usual place: there is nothing to sort it by.
+ */
+export function orderedPrayerNames(day: PrayerDay): PrayerName[] {
+  const timed = PRAYER_ORDER.filter((name) => day.times[name] !== null).sort(
+    (first, second) => (day.times[first] ?? 0) - (day.times[second] ?? 0),
+  );
+
+  let next = 0;
+  return PRAYER_ORDER.map((name) => {
+    if (day.times[name] === null) return name;
+    const sorted = timed[next];
+    next += 1;
+    return sorted ?? name;
+  });
+}
+
+/**
  * The soonest of the five prayers that is still ahead of `now`, looking into
  * tomorrow after Isha. Null only if no time can be calculated at all.
  */

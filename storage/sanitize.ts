@@ -162,6 +162,7 @@ export function sanitizePrayerSettings(raw: unknown): PrayerSettings {
     asrMethod: raw.asrMethod === 'hanafi' ? 'hanafi' : 'standard',
     adjustments,
     notifications: sanitizePerSalah(raw.notifications, fallback.notifications),
+    alertsBlocked: asBoolean(raw.alertsBlocked, fallback.alertsBlocked),
     adhanEnabled: asBoolean(raw.adhanEnabled, fallback.adhanEnabled),
     adhan: sanitizePerSalah(raw.adhan, fallback.adhan),
     fajrAdhanSeparate: asBoolean(raw.fajrAdhanSeparate, fallback.fajrAdhanSeparate),

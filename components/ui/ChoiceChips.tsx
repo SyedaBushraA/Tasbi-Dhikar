@@ -18,6 +18,8 @@ export interface ChoiceChipsProps<T extends string | number> {
   onChange: (value: T) => void;
   /** Read by screen readers as the name of the group. */
   accessibilityLabel: string;
+  /** No choice can be made yet. The chips still show what is chosen. */
+  disabled?: boolean;
   testID?: string;
 }
 
@@ -27,6 +29,7 @@ export function ChoiceChips<T extends string | number>({
   value,
   onChange,
   accessibilityLabel,
+  disabled = false,
   testID,
 }: ChoiceChipsProps<T>) {
   const theme = useTheme();
@@ -36,7 +39,7 @@ export function ChoiceChips<T extends string | number>({
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={accessibilityLabel}
-      style={styles.group}
+      style={[styles.group, disabled && styles.disabled]}
       testID={testID}
     >
       {options.map((option) => {
@@ -45,9 +48,10 @@ export function ChoiceChips<T extends string | number>({
           <Pressable
             key={String(option.value)}
             onPress={() => onChange(option.value)}
+            disabled={disabled}
             accessibilityRole="radio"
             accessibilityLabel={option.accessibilityLabel ?? option.label}
-            accessibilityState={{ selected, checked: selected }}
+            accessibilityState={{ selected, checked: selected, disabled }}
             testID={testID ? `${testID}-${option.value}` : undefined}
             style={({ pressed }) => [
               styles.chip,
@@ -79,6 +83,8 @@ export function ChoiceChips<T extends string | number>({
 
 const styles = StyleSheet.create({
   group: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
+  // Dimmed as well as announced, so "not yet" is never carried by colour alone.
+  disabled: { opacity: 0.45 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -118,7 +118,8 @@ export async function createTestHarness(options: HarnessOptions = {}): Promise<T
   const store = createAppStore(storage, { debounceMs: options.debounceMs ?? 0 });
   const clock = options.clock ?? createClock(TEST_NOW, TAP_STEP_MS);
   const services = createTestServices(clock);
-  const actions = createAppActions(store, services);
+  // No quiet period before a resync, so a test never waits for one.
+  const actions = createAppActions(store, services, { resyncQuietMs: 0 });
   await store.hydrate();
   return { store, actions, services, storage, clock };
 }

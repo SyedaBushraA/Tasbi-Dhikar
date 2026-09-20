@@ -1,4 +1,9 @@
-import { SALAH_ORDER, suggestedAsrMethod, suggestedMethod } from '@/constants/prayer';
+import {
+  ALERT_RESYNC_QUIET_MS,
+  SALAH_ORDER,
+  suggestedAsrMethod,
+  suggestedMethod,
+} from '@/constants/prayer';
 import type {
   AsrMethod,
   CalculationMethodId,
@@ -66,13 +71,22 @@ export interface PrayerActions {
   /**
    * Tops up scheduled notifications (they are planned a limited number of days
    * ahead). Call on start and when the app returns to the foreground. Never
-   * prompts; turns the notifications off if the permission was revoked.
+   * prompts; turns the notifications off if the permission was revoked and
+   * marks them as blocked, so the prayer settings can explain it.
    */
   syncPrayerAlerts(): Promise<void>;
 }
 
+export interface PrayerActionOptions {
+  /** Quiet period before changed settings rewrite what is scheduled. */
+  resyncQuietMs?: number;
+}
+
 /** Changes that do not affect what is scheduled. */
-const LOCAL_ONLY_FIELDS: ReadonlySet<keyof PrayerSettingsPatch> = new Set(['adhanVolume']);
+const LOCAL_ONLY_FIELDS: ReadonlySet<keyof PrayerSettingsPatch> = new Set([
+  'adhanVolume',
+  'alertsBlocked',
+]);
 
 function allSalah(value: boolean): Record<SalahName, boolean> {
   const result = {} as Record<SalahName, boolean>;
@@ -80,10 +94,16 @@ function allSalah(value: boolean): Record<SalahName, boolean> {
   return result;
 }
 
-export function createPrayerActions(store: AppStore, services: PrayerServices): PrayerActions {
+export function createPrayerActions(
+  store: AppStore,
+  services: PrayerServices,
+  options: PrayerActionOptions = {},
+): PrayerActions {
+  const resyncQuietMs = options.resyncQuietMs ?? ALERT_RESYNC_QUIET_MS;
   // Syncs run one after another; changes made meanwhile are covered by one more run.
   let running: Promise<PrayerAlertResult> | null = null;
   let rerun = false;
+  let quietTimer: ReturnType<typeof setTimeout> | null = null;
 
   function alertInput(): PrayerAlertInput {
     const { prayer, settings } = store.getState();
@@ -121,6 +141,19 @@ export function createPrayerActions(store: AppStore, services: PrayerServices): 
     return running;
   }
 
+  /**
+   * A sync after a short quiet period, for settings the user changes a step at
+   * a time. Every alert carries its time in its identifier, so each step would
+   * otherwise cancel and re-create every scheduled notification.
+   */
+  function syncAfterQuiet(): void {
+    if (quietTimer !== null) clearTimeout(quietTimer);
+    quietTimer = setTimeout(() => {
+      quietTimer = null;
+      void sync();
+    }, resyncQuietMs);
+  }
+
   function update(patch: PrayerSettingsPatch): void {
     store.dispatch({ type: 'updatePrayer', patch });
   }
@@ -130,7 +163,9 @@ export function createPrayerActions(store: AppStore, services: PrayerServices): 
   ): Promise<PrayerAlertResult> {
     const turningOn = Object.values(changes).some(Boolean);
     const before = store.getState().prayer.notifications;
-    update({ notifications: changes });
+    // The user is choosing their alerts again, so a withdrawn permission is no
+    // longer news: what happens now is answered by this very attempt.
+    update({ notifications: changes, alertsBlocked: false });
 
     // A permission question must not be merged into a sync that is already running.
     if (running) await running;
@@ -163,7 +198,7 @@ export function createPrayerActions(store: AppStore, services: PrayerServices): 
       const affectsAlerts = (Object.keys(patch) as (keyof PrayerSettingsPatch)[]).some(
         (key) => !LOCAL_ONLY_FIELDS.has(key),
       );
-      if (affectsAlerts) void sync();
+      if (affectsAlerts) syncAfterQuiet();
     },
 
     setPrayerLocation,
@@ -196,7 +231,9 @@ export function createPrayerActions(store: AppStore, services: PrayerServices): 
       const result = await sync(false);
       const { notifications } = store.getState().prayer;
       if (result === 'denied' && Object.values(notifications).some(Boolean)) {
-        update({ notifications: allSalah(false) });
+        // Nothing can arrive any more, so the choices go off rather than lie.
+        // The mark is what lets the settings say why they are gone.
+        update({ notifications: allSalah(false), alertsBlocked: true });
       }
     },
   };

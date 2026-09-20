@@ -54,6 +54,9 @@ const config: ExpoConfig = {
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      // Prayer times need no more than kilometre precision, so the app asks
+      // for the approximate position, as it does on Android.
+      NSLocationDefaultAccuracyReduced: true,
     },
   },
   android: {
@@ -68,6 +71,10 @@ const config: ExpoConfig = {
     // the optional reminder and prayer alerts (kept across a restart of the
     // phone, and on time when the user allows exact alarms); approximate
     // location, once and only when the user asks for it, for prayer times.
+    // SCHEDULE_EXACT_ALARM is kept deliberately: a prayer alert that arrives
+    // minutes late is the wrong alert, and the prayer settings point the user
+    // at the "Alarms & reminders" permission this asks for. It is the
+    // permission the user grants, not the restricted USE_EXACT_ALARM.
     permissions: [
       'android.permission.VIBRATE',
       'android.permission.POST_NOTIFICATIONS',

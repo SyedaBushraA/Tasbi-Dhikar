@@ -1,4 +1,5 @@
 import { type AudioPlayer, createAudioPlayer } from 'expo-audio';
+import { AppState } from 'react-native';
 
 import { ADHAN_AUDIO } from '@/constants/adhanAudio';
 import { SALAH_ORDER } from '@/constants/prayer';
@@ -129,6 +130,13 @@ export function stopAdhan(): void {
   releaseAdhanAudioMode();
   setState({ playing: false, recording: null });
 }
+
+// The app does not play in the background, so leaving the screen ends the
+// recording. Without this the watchdog would keep ticking while the app sleeps
+// and the button would still say "Stop" when the user comes back.
+AppState.addEventListener('change', (next) => {
+  if (next === 'background' && state.playing) stopAdhan();
+});
 
 /** Applies a new volume to a recording that is playing now. */
 export function setAdhanVolume(volume: number): void {

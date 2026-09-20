@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
+import { AdhanStopButton } from '@/components/prayer/AdhanStopButton';
 import { CalculationSummary } from '@/components/prayer/CalculationSummary';
 import { MethodReviewNotice } from '@/components/prayer/MethodReviewNotice';
 import { NextPrayerCard } from '@/components/prayer/NextPrayerCard';
@@ -9,7 +10,7 @@ import { PrayerDayHeader } from '@/components/prayer/PrayerDayHeader';
 import { PrayerSetup } from '@/components/prayer/PrayerSetup';
 import { PrayerTimesList } from '@/components/prayer/PrayerTimesList';
 import { TimeZoneNote } from '@/components/prayer/TimeZoneNote';
-import { locationLabel } from '@/components/prayer/labels';
+import { formatLongDay, locationLabel } from '@/components/prayer/labels';
 import { AppButton, AppText, Screen } from '@/components/ui';
 import { SPACING } from '@/constants/theme';
 import { usePrayerTimes } from '@/hooks/usePrayerTimes';
@@ -49,26 +50,35 @@ export default function PrayerScreen() {
   );
 
   if (easyMode) {
+    // Without a next prayer the card explains itself, and the list is the only
+    // prayer information left, so it is not hidden behind a button.
+    const timesOnly = next === null;
     return (
       <Screen scroll contentStyle={styles.content} testID="prayer-screen">
         {title}
+        <AdhanStopButton />
         {methodNotice}
+        <AppText variant="heading" align="center" testID="prayer-easy-date">
+          {formatLongDay(today.dayKey, locale)}
+        </AppText>
         <NextPrayerCard next={next} now={now} clockFormat={clockFormat} />
         <AppText variant="body" tone="muted" align="center">
           {locationLabel(location, locale)}
         </AppText>
-        <AppButton
-          label={timesShown ? t('prayer.hideAllTimes') : t('prayer.showAllTimes')}
-          icon={timesShown ? 'chevron-up' : 'chevron-down'}
-          variant="secondary"
-          fullWidth
-          onPress={toggleTimes}
-          accessibilityHint={
-            timesShown ? t('prayer.a11y.hideAllTimesHint') : t('prayer.a11y.showAllTimesHint')
-          }
-          testID="prayer-toggle-times"
-        />
-        {timesShown ? (
+        {timesOnly ? null : (
+          <AppButton
+            label={timesShown ? t('prayer.hideAllTimes') : t('prayer.showAllTimes')}
+            icon={timesShown ? 'chevron-up' : 'chevron-down'}
+            variant="secondary"
+            fullWidth
+            onPress={toggleTimes}
+            accessibilityHint={
+              timesShown ? t('prayer.a11y.hideAllTimesHint') : t('prayer.a11y.showAllTimesHint')
+            }
+            testID="prayer-toggle-times"
+          />
+        )}
+        {timesShown || timesOnly ? (
           <PrayerTimesList day={today} next={next} now={now} clockFormat={clockFormat} />
         ) : null}
         {/* Easy Mode leaves out the calculation summary, so settings need their own way in. */}
@@ -88,6 +98,7 @@ export default function PrayerScreen() {
   return (
     <Screen scroll contentStyle={styles.content} testID="prayer-screen">
       {title}
+      <AdhanStopButton />
       {methodNotice}
       <PrayerDayHeader dayKey={today.dayKey} location={location} />
       <NextPrayerCard next={next} now={now} clockFormat={clockFormat} />

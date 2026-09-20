@@ -217,6 +217,36 @@ describe('syncPrayerAlerts', () => {
     expect(harness.syncAlerts.mock.calls[0]?.[1]).toEqual({ requestPermission: false });
   });
 
+  /* Alerts that vanish without a word leave the user waiting for a prayer
+     notification that can no longer arrive. */
+  it('marks the alerts it had to turn off, so the settings can explain it', async () => {
+    const harness = await prayerHarness({
+      prayer: prayerSettings({ location: HYDERABAD, notifications: { fajr: true } }),
+    });
+    harness.syncAlerts.mockResolvedValue('denied');
+
+    await harness.actions.syncPrayerAlerts();
+    expect(harness.prayer().alertsBlocked).toBe(true);
+    expect(harness.storage.written.prayer?.alertsBlocked).toBe(true);
+  });
+
+  it('marks nothing when there was no alert to lose', async () => {
+    const harness = await prayerHarness(withPlace);
+    harness.syncAlerts.mockResolvedValue('denied');
+
+    await harness.actions.syncPrayerAlerts();
+    expect(harness.prayer().alertsBlocked).toBe(false);
+  });
+
+  it('drops the mark as soon as the user chooses their alerts again', async () => {
+    const harness = await prayerHarness({
+      prayer: prayerSettings({ location: HYDERABAD, alertsBlocked: true }),
+    });
+
+    await harness.actions.setPrayerNotification('fajr', true);
+    expect(harness.prayer().alertsBlocked).toBe(false);
+  });
+
   const fine: PrayerAlertResult[] = ['scheduled', 'none'];
 
   it.each(fine)('leaves the switches alone when the sync reports %s', async (result) => {
@@ -271,6 +301,21 @@ describe('updatePrayerSettings', () => {
     harness.actions.updatePrayerSettings({ adhan: { isha: false } });
     await flush();
     expect(harness.syncAlerts).toHaveBeenCalledTimes(3);
+  });
+
+  /* Every scheduled alert carries its time in its identifier, so one tap on a
+     minute stepper would otherwise rewrite all sixty of them. */
+  it('rewrites the scheduled alerts once for a burst of changes', async () => {
+    const harness = await prayerHarness(withPlace);
+
+    harness.actions.updatePrayerSettings({ adjustments: { fajr: 1 } });
+    harness.actions.updatePrayerSettings({ adjustments: { fajr: 2 } });
+    harness.actions.updatePrayerSettings({ adjustments: { fajr: 3 } });
+    await flush();
+
+    expect(harness.prayer().adjustments.fajr).toBe(3);
+    expect(harness.syncAlerts).toHaveBeenCalledTimes(1);
+    expect(harness.syncAlerts.mock.calls[0]?.[0].prayer.adjustments.fajr).toBe(3);
   });
 
   it('still syncs when the volume changes together with something else', async () => {

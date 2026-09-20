@@ -61,6 +61,7 @@ function savedState(): AppState {
       asrMethod: 'hanafi',
       adjustments: { fajr: 2, sunrise: 0, dhuhr: -1, asr: 0, maghrib: 3, isha: 0 },
       notifications: { fajr: true, dhuhr: false, asr: true, maghrib: true, isha: false },
+      alertsBlocked: false,
       adhanEnabled: true,
       adhan: { fajr: true, dhuhr: true, asr: false, maghrib: true, isha: true },
       fajrAdhanSeparate: false,

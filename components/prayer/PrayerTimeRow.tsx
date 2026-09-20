@@ -13,8 +13,10 @@ export interface PrayerTimeRowProps {
   name: PrayerName;
   /** Null when the time does not exist at this place on this day. */
   time: number | null;
-  /** The prayer that is coming next today. */
+  /** The prayer that is coming next. */
   isNext: boolean;
+  /** The next prayer belongs to the next day, as Fajr does after Isha. */
+  isTomorrow: boolean;
   /** Already passed today. Only dims the row; the time itself still reads normally. */
   isPast: boolean;
   clockFormat: ClockFormat;
@@ -26,6 +28,7 @@ export const PrayerTimeRow = memo(function PrayerTimeRow({
   name,
   time,
   isNext,
+  isTomorrow,
   isPast,
   clockFormat,
   testID,
@@ -36,8 +39,13 @@ export const PrayerTimeRow = memo(function PrayerTimeRow({
 
   const prayerName = t(prayerNameKey(name));
   const timeText = formatPrayerTime(time, clockFormat, t);
-  // Sunrise is in the list because it ends the Fajr time, not because it is a prayer.
-  const note = name === 'sunrise' ? t('prayer.sunriseNote') : undefined;
+  // Sunrise is in the list because it ends the Fajr time, not because it is a
+  // prayer. Sunrise is never the next prayer, so the two notes cannot clash.
+  const note = isTomorrow
+    ? t('prayer.tomorrow')
+    : name === 'sunrise'
+      ? t('prayer.sunriseNote')
+      : undefined;
 
   // The dash for a missing time says nothing when it is read out.
   const spokenTime = time === null ? t('prayer.a11y.timeUnavailable') : timeText;

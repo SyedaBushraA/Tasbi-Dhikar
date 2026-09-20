@@ -7,6 +7,7 @@ import type {
   PrayerLocation,
   PrayerName,
 } from '@/types';
+import { dayKeyToDate, formatDayKey } from '@/utils/date';
 import { countdownTo, formatTimeOfDay } from '@/utils/prayer';
 
 /** Below a minute the countdown says "less than a minute" instead of "1 min". */
@@ -57,6 +58,21 @@ export function spokenCountdown(target: number, now: number, translator: Transla
   if (hours > 0) parts.push(tCount('prayer.a11y.hoursUnit', hours));
   if (minutes > 0 || hours === 0) parts.push(tCount('prayer.a11y.minutesUnit', minutes));
   return t('prayer.a11y.inTime', { duration: parts.join(' ') });
+}
+
+/** "Friday, 20 September 2026", falling back to the shorter format of the app. */
+export function formatLongDay(dayKey: string, locale: string): string {
+  const date = dayKeyToDate(dayKey);
+  try {
+    return date.toLocaleDateString(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  } catch {
+    return formatDayKey(dayKey, locale);
+  }
 }
 
 /** The country in the language of the app. Not every phone can name regions. */

@@ -147,10 +147,14 @@ export function deferred<T>(): Deferred<T> {
   return { promise, resolve: (value) => settle(value), reject: (error) => fail(error) };
 }
 
-/** Lets queued promise callbacks run, so fire-and-forget work finishes. */
+/**
+ * Lets queued promise callbacks and timers that are already due run, so
+ * fire-and-forget work finishes. Timers of the same delay run in the order
+ * they were set, so a resync waiting for a quiet period of zero runs first.
+ */
 export function flush(): Promise<void> {
   return new Promise((resolve) => {
-    setImmediate(resolve);
+    setTimeout(resolve, 0);
   });
 }
 
@@ -235,7 +239,8 @@ export async function prayerHarness(options: HarnessOptions = {}): Promise<Praye
   };
 
   const store = createAppStore(storage, { debounceMs: 0 });
-  const actions = createAppActions(store, services);
+  // No quiet period before a resync: `flush` is what lets it run.
+  const actions = createAppActions(store, services, { resyncQuietMs: 0 });
   await store.hydrate();
 
   return {

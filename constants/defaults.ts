@@ -29,6 +29,7 @@ export function createDefaultPrayerSettings(): PrayerSettings {
     asrMethod: 'standard',
     adjustments: { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 },
     notifications: perSalah(false),
+    alertsBlocked: false,
     adhanEnabled: false,
     adhan: perSalah(true),
     fajrAdhanSeparate: true,

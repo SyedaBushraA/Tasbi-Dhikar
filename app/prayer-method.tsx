@@ -65,7 +65,8 @@ export default function PrayerMethodScreen() {
 
   function confirm(): void {
     actions.confirmCalculation(method, asrMethod);
-    if (router.canDismiss()) router.dismissTo('/prayer');
+    // Back to the screen the user came from, which may be the prayer settings.
+    if (router.canGoBack()) router.back();
     else router.replace('/prayer');
   }
 

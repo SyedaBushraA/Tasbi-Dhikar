@@ -77,6 +77,12 @@ export interface PrayerSettings {
   adjustments: Record<PrayerName, number>;
   /** A notification at the time of each prayer. */
   notifications: Record<SalahName, boolean>;
+  /**
+   * The notification permission was withdrawn after alerts had been chosen, so
+   * they were turned off. Kept until the user chooses again, so the settings
+   * can say why the alerts they had set are gone.
+   */
+  alertsBlocked: boolean;
   /** Master switch for the Adhan sound on prayer notifications. */
   adhanEnabled: boolean;
   /** Which prayers use the Adhan instead of the normal notification sound. */

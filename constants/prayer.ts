@@ -90,3 +90,10 @@ export const RESERVED_NOTIFICATIONS = 1;
 
 /** Identifiers of scheduled prayer notifications start with this. */
 export const PRAYER_NOTIFICATION_PREFIX = 'prayer-';
+
+/**
+ * Quiet period before changed settings rewrite what is scheduled. Every alert
+ * carries its time in its identifier, so each tap on a minute stepper would
+ * otherwise replace all of them; a burst of taps is one change, not ten.
+ */
+export const ALERT_RESYNC_QUIET_MS = 700;

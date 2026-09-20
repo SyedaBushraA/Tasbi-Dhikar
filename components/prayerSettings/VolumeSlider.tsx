@@ -1,4 +1,5 @@
 import Slider from '@react-native-community/slider';
+import { useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui';
@@ -14,7 +15,7 @@ export interface VolumeSliderProps {
   value: number;
   /** While the finger moves, so the sound follows at once. */
   onChange: (value: number) => void;
-  /** When the finger is lifted: the moment the value is stored. */
+  /** The value to store: at the end of a drag, or at once for every other change. */
   onCommit: (value: number) => void;
   disabled?: boolean;
   testID?: string;
@@ -31,10 +32,19 @@ export function VolumeSlider({
   const theme = useTheme();
   const { t, n } = useTranslation();
   const { colors } = theme;
+  // A screen reader never lifts a finger, so it never ends a drag either.
+  const dragging = useRef(false);
 
   const label = t('prayerSettings.adhan.volume');
   const percent = Math.round(value * 100);
   const percentText = t('prayerSettings.adhan.volumeValue', { percent: n(percent) });
+
+  function handleChange(next: number): void {
+    onChange(next);
+    // A drag stores its value once, when the finger is lifted, instead of on
+    // every frame; anything else is already the final value.
+    if (!dragging.current) onCommit(next);
+  }
 
   return (
     <View style={[styles.root, disabled && styles.disabled]} testID={testID}>
@@ -52,8 +62,14 @@ export function VolumeSlider({
         maximumValue={1}
         step={STEP}
         disabled={disabled}
-        onValueChange={onChange}
-        onSlidingComplete={onCommit}
+        onValueChange={handleChange}
+        onSlidingStart={() => {
+          dragging.current = true;
+        }}
+        onSlidingComplete={(next) => {
+          dragging.current = false;
+          onCommit(next);
+        }}
         minimumTrackTintColor={colors.primary}
         maximumTrackTintColor={colors.track}
         thumbTintColor={colors.primary}

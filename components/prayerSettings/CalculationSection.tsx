@@ -22,6 +22,10 @@ export const CalculationSection = memo(function CalculationSection({
   const { t, n } = useTranslation();
 
   const methodName = t(`prayer.methods.${prayer.method}`);
+  // The method is never assumed silently, and a screen reader hears that too.
+  const methodValue = prayer.methodConfirmed
+    ? methodName
+    : `${methodName} · ${t('prayerSettings.calculation.unconfirmed')}`;
   const asrName = t(`prayer.asrMethods.${prayer.asrMethod}`);
   const adjustments = adjustmentsSummary(prayer.adjustments, t, n);
   const methodTitle = t('prayerSettings.methodTitle');
@@ -32,15 +36,10 @@ export const CalculationSection = memo(function CalculationSection({
     <Section title={t('prayerSettings.calculation.title')}>
       <ListRow
         title={methodTitle}
-        subtitle={
-          // The method is never assumed silently: an unconfirmed one says so.
-          prayer.methodConfirmed
-            ? methodName
-            : `${methodName} · ${t('prayerSettings.calculation.unconfirmed')}`
-        }
+        subtitle={methodValue}
         showChevron
         onPress={openMethod}
-        accessibilityLabel={`${methodTitle}, ${methodName}`}
+        accessibilityLabel={`${methodTitle}, ${methodValue}`}
         accessibilityHint={t('prayerSettings.calculation.methodHint')}
         testID="prayer-settings-method"
       />

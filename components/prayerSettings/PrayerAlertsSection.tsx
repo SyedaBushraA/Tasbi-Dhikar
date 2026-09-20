@@ -4,7 +4,15 @@ import { Linking, Platform, StyleSheet, View } from 'react-native';
 
 import { AnnouncedNotice } from '@/components/settings/AnnouncedNotice';
 import { SectionBlock } from '@/components/settings/SectionBlock';
-import { AppButton, AppText, ChoiceChips, Notice, RowDivider, Section } from '@/components/ui';
+import {
+  AppButton,
+  AppText,
+  type ChoiceOption,
+  ChoiceChips,
+  Notice,
+  RowDivider,
+  Section,
+} from '@/components/ui';
 import { SALAH_ORDER } from '@/constants/prayer';
 import { SPACING } from '@/constants/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -51,7 +59,6 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
 
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<'denied' | 'failed' | null>(null);
-  const [showEach, setShowEach] = useState(false);
   const [volume, setVolume] = useState(prayer.adhanVolume);
   const busyRef = useRef(false);
 
@@ -65,6 +72,10 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
   const playable = adhanPlaybackAvailable();
   const sounds = adhanNotificationSounds();
   const adhanBundled = playable.standard || playable.fajr || sounds.standard || sounds.fajr;
+  // Without a notification sound the Adhan cannot be heard while Tasbi is
+  // closed, however well it plays inside the app. Saying otherwise is a promise
+  // the phone will not keep.
+  const adhanWhenClosed = sounds.standard || sounds.fajr;
 
   const modes = SALAH_ORDER.map((name) => modeOf(prayer, name));
   const firstMode = modes[0];
@@ -74,10 +85,25 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
   const hasLocation = prayer.location !== null;
   const locked = busy || !hasLocation;
 
-  const options = MODES.filter((mode) => mode !== 'adhan' || adhanBundled).map((mode) => ({
-    value: mode,
-    label: t(`prayerSettings.alerts.modes.${mode}`),
-  }));
+  // One row cannot tell the truth about prayers that differ, so the list opens.
+  const [showEach, setShowEach] = useState(sharedMode === null);
+  // Easy Mode keeps one choice for all five until the user asks for the list.
+  const listVisible = !easyMode || showEach;
+
+  /** Chips for one row. Each one names its prayer, which the group name alone does not. */
+  function optionsFor(prayerLabel: string): ChoiceOption<AlertMode>[] {
+    return MODES.filter((mode) => mode !== 'adhan' || adhanBundled).map((mode) => {
+      const label = t(`prayerSettings.alerts.modes.${mode}`);
+      return {
+        value: mode,
+        label,
+        accessibilityLabel: t('prayerSettings.alerts.a11y.option', {
+          mode: label,
+          prayer: prayerLabel,
+        }),
+      };
+    });
+  }
 
   async function apply(names: readonly SalahName[], mode: AlertMode): Promise<void> {
     if (busyRef.current) return;
@@ -85,7 +111,9 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
     setBusy(true);
     setProblem(null);
 
-    // The sound is decided before the notification is scheduled with it.
+    // The sound is decided before the notification is scheduled with it, so
+    // what it replaces is kept to put back if the choice does not come off.
+    const restore = { adhan: { ...prayer.adhan }, adhanEnabled: prayer.adhanEnabled };
     const adhan: Partial<Record<SalahName, boolean>> = {};
     for (const name of names) adhan[name] = mode === 'adhan';
     const adhanAfter = SALAH_ORDER.some((name) =>
@@ -103,7 +131,12 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
       result = 'failed';
     }
     // Turning an alert off can never fail in a way the user needs to act on.
-    if (mode !== 'off' && (result === 'denied' || result === 'failed')) setProblem(result);
+    if (mode !== 'off' && (result === 'denied' || result === 'failed')) {
+      // The notification went back by itself; the sound must go back with it,
+      // or the chip would show a choice the user never got.
+      actions.updatePrayerSettings(restore);
+      setProblem(result);
+    }
 
     busyRef.current = false;
     setBusy(false);
@@ -125,27 +158,88 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
           <AppText variant="body">{t('prayerSettings.alerts.needLocation')}</AppText>
         )}
         {adhanBundled ? null : <Notice message={t('prayerSettings.adhan.notIncluded')} />}
+        {/* The alerts were turned off by the phone, not by the user: say so. */}
+        {prayer.alertsBlocked ? (
+          <Notice
+            tone="warning"
+            message={t('prayerSettings.alerts.blocked')}
+            testID="prayer-alerts-blocked"
+          >
+            <AppText variant="body">{t('prayerSettings.alerts.blockedMessage')}</AppText>
+            <AppButton
+              variant="secondary"
+              icon="settings-outline"
+              label={t('prayerSettings.notifications.openPhoneSettings')}
+              onPress={openPhoneSettings}
+              testID="prayer-alerts-blocked-settings"
+            />
+          </Notice>
+        ) : null}
+        {/* Next to the choice that failed, not at the foot of the section. */}
+        {problem === null ? null : (
+          <AnnouncedNotice
+            tone="warning"
+            message={t(`prayerSettings.notifications.${problem}`)}
+            testID="prayer-alerts-notice"
+          >
+            {problem === 'denied' ? (
+              <>
+                <AppText variant="body">{t('prayerSettings.notifications.deniedMessage')}</AppText>
+                <AppButton
+                  variant="secondary"
+                  icon="settings-outline"
+                  label={t('prayerSettings.notifications.openPhoneSettings')}
+                  onPress={openPhoneSettings}
+                  testID="prayer-alerts-open-settings"
+                />
+              </>
+            ) : null}
+          </AnnouncedNotice>
+        )}
       </SectionBlock>
 
       <RowDivider />
       <View style={styles.row}>
         <AppText variant="label">{t('prayerSettings.alerts.allPrayers')}</AppText>
-        {sharedMode === null ? (
+        {sharedMode === null && listVisible ? (
           <AppText variant="caption" tone="muted">
             {t('prayerSettings.alerts.mixed')}
           </AppText>
         ) : null}
         <ChoiceChips
-          options={options}
-          value={locked ? null : sharedMode}
+          options={optionsFor(t('prayerSettings.alerts.allPrayers'))}
+          value={sharedMode}
           onChange={(mode) => void apply(SALAH_ORDER, mode)}
           accessibilityLabel={t('prayerSettings.alerts.a11y.allGroup')}
+          disabled={locked}
           testID="prayer-alerts-all"
         />
       </View>
 
-      {/* Easy Mode keeps one choice for all five; the list is one button away. */}
-      {easyMode && !showEach ? (
+      {listVisible ? (
+        SALAH_ORDER.map((name) => {
+          const prayerLabel = t(`prayer.names.${name}`);
+          return (
+            <Fragment key={name}>
+              <RowDivider />
+              <View style={styles.row}>
+                <AppText variant="label">{prayerLabel}</AppText>
+                <ChoiceChips
+                  options={optionsFor(prayerLabel)}
+                  value={modeOf(prayer, name)}
+                  onChange={(mode) => void apply([name], mode)}
+                  accessibilityLabel={t('prayerSettings.alerts.a11y.group', {
+                    prayer: prayerLabel,
+                  })}
+                  disabled={locked}
+                  testID={`prayer-alerts-${name}`}
+                />
+              </View>
+            </Fragment>
+          );
+        })
+      ) : (
+        /* The list is one button away, so Easy Mode starts with one choice. */
         <>
           <RowDivider />
           <SectionBlock>
@@ -159,24 +253,6 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
             />
           </SectionBlock>
         </>
-      ) : (
-        SALAH_ORDER.map((name) => (
-          <Fragment key={name}>
-            <RowDivider />
-            <View style={styles.row}>
-              <AppText variant="label">{t(`prayer.names.${name}`)}</AppText>
-              <ChoiceChips
-                options={options}
-                value={locked ? null : modeOf(prayer, name)}
-                onChange={(mode) => void apply([name], mode)}
-                accessibilityLabel={t('prayerSettings.alerts.a11y.group', {
-                  prayer: t(`prayer.names.${name}`),
-                })}
-                testID={`prayer-alerts-${name}`}
-              />
-            </View>
-          </Fragment>
-        ))
       )}
 
       {anyAdhan ? (
@@ -190,14 +266,22 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
               disabled={!(playable.standard || playable.fajr)}
               testID="prayer-adhan-volume"
             />
+            {/* The slider moves the sound the app plays, not the one the phone plays. */}
+            <AppText variant="caption" tone="muted">
+              {t('prayerSettings.adhan.volumeCaption')}
+            </AppText>
             <AdhanTestButtons
               volume={volume}
               available={playable}
-              showFajr={false}
+              showFajr={!easyMode}
               testID="prayer-adhan-test"
             />
-            <AppText variant="caption" tone="muted">
-              {t('prayerSettings.adhan.platformNote')}
+            <AppText variant="caption" tone="muted" testID="prayer-adhan-platform-note">
+              {t(
+                adhanWhenClosed
+                  ? 'prayerSettings.adhan.platformNote'
+                  : 'prayerSettings.adhan.inAppOnlyNote',
+              )}
             </AppText>
           </SectionBlock>
         </>
@@ -220,34 +304,6 @@ export const PrayerAlertsSection = memo(function PrayerAlertsSection({
           </SectionBlock>
         </>
       ) : null}
-
-      {problem === null ? null : (
-        <>
-          <RowDivider />
-          <SectionBlock>
-            <AnnouncedNotice
-              tone="warning"
-              message={t(`prayerSettings.notifications.${problem}`)}
-              testID="prayer-alerts-notice"
-            >
-              {problem === 'denied' ? (
-                <>
-                  <AppText variant="body">
-                    {t('prayerSettings.notifications.deniedMessage')}
-                  </AppText>
-                  <AppButton
-                    variant="secondary"
-                    icon="settings-outline"
-                    label={t('prayerSettings.notifications.openPhoneSettings')}
-                    onPress={openPhoneSettings}
-                    testID="prayer-alerts-open-settings"
-                  />
-                </>
-              ) : null}
-            </AnnouncedNotice>
-          </SectionBlock>
-        </>
-      )}
     </Section>
   );
 });

@@ -11,6 +11,10 @@ export const prayer = {
   am: 'AM',
   pm: 'PM',
   nextPrayer: 'Next prayer',
+  tomorrow: 'Tomorrow',
+  noNextPrayer:
+    'No upcoming prayer time could be worked out for this place. Please check the location and the calculation method.',
+  stopAdhan: 'Stop the Adhan',
   countdown: {
     hoursMinutes: 'In {hours} h {minutes} min',
     hours: 'In {hours} h',
@@ -84,5 +88,6 @@ export const prayer = {
     changeLocationHint: 'Opens the location screen',
     showAllTimesHint: 'Shows every prayer time of today',
     hideAllTimesHint: 'Hides the list of prayer times',
+    stopAdhanHint: 'Stops the Adhan that is playing',
   },
 };
