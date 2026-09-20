@@ -168,6 +168,26 @@ describe('updateSettings', () => {
 
     expect(services.prayer.syncAlerts).not.toHaveBeenCalled();
   });
+
+  it('rewrites the daily reminder after a change of language', async () => {
+    const { actions, services } = await harness({
+      settings: { reminder: { enabled: true, hour: 6, minute: 30 } },
+    });
+
+    actions.updateSettings({ language: 'ar' });
+
+    expect(services.reminders.sync).toHaveBeenCalledWith(true, 6, 30, expect.anything());
+  });
+
+  it('leaves the daily reminder alone for a change that does not affect its text', async () => {
+    const { actions, services } = await harness({
+      settings: { reminder: { enabled: true, hour: 6, minute: 30 } },
+    });
+
+    actions.updateSettings({ clockFormat: '24h' });
+
+    expect(services.reminders.sync).not.toHaveBeenCalled();
+  });
 });
 
 describe('completeOnboarding', () => {

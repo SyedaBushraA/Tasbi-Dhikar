@@ -60,6 +60,23 @@ export const prayerSettings = {
       },
     },
   },
+  alerts: {
+    title: 'Prayer alerts',
+    intro: 'Choose what happens at each prayer time.',
+    allPrayers: 'All prayers',
+    mixed: 'Set one by one below',
+    setEach: 'Set each prayer',
+    needLocation: 'Set your location first.',
+    modes: {
+      off: 'Off',
+      notification: 'Notification',
+      adhan: 'Adhan',
+    },
+    a11y: {
+      allGroup: 'Alert for all prayers',
+      group: 'Alert for {prayer}',
+    },
+  },
   notifications: {
     intro: 'A notification at the time of each prayer you turn on.',
     all: 'All prayers',
@@ -92,6 +109,6 @@ export const prayerSettings = {
     testFajr: 'Play Fajr Adhan',
     stop: 'Stop',
     platformNote:
-      'When Tasbi is closed, the Adhan plays as the notification sound. Your phone decides how long it plays; on iPhone at most 30 seconds, and some phones shorten long sounds.',
+      'When Tasbi is closed, the Adhan plays as the notification sound, and your phone decides how long it plays. On iPhone that is up to 30 seconds.',
   },
 };

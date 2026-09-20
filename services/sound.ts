@@ -1,4 +1,6 @@
-import { type AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { type AudioPlayer, createAudioPlayer } from 'expo-audio';
+
+import { applyAudioMode } from './audioMode';
 
 /*
  * Two short sounds that ship inside the app, so they work offline. Players are
@@ -15,23 +17,10 @@ type SoundName = keyof typeof SOURCES;
 const VOLUME: Record<SoundName, number> = { tick: 0.6, complete: 0.8 };
 
 const players: Partial<Record<SoundName, AudioPlayer>> = {};
-let audioModeConfigured = false;
-
-function configureAudioMode(): void {
-  if (audioModeConfigured) return;
-  audioModeConfigured = true;
-  // Respect the silent switch and never interrupt a recitation playing in another app.
-  setAudioModeAsync({
-    playsInSilentMode: false,
-    interruptionMode: 'mixWithOthers',
-    shouldPlayInBackground: false,
-  }).catch(() => undefined);
-}
 
 function getPlayer(name: SoundName): AudioPlayer {
   let player = players[name];
   if (!player) {
-    configureAudioMode();
     player = createAudioPlayer(SOURCES[name]);
     player.volume = VOLUME[name];
     players[name] = player;
@@ -41,6 +30,8 @@ function getPlayer(name: SoundName): AudioPlayer {
 
 function play(name: SoundName): void {
   try {
+    // Before every sound, because the Adhan needs the opposite mode.
+    applyAudioMode('quiet');
     const player = getPlayer(name);
     // A finished sound stays at its end, so rewind before every play.
     player

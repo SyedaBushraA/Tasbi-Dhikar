@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
@@ -25,6 +26,7 @@ export default function PrayerScreen() {
   const [timesShown, setTimesShown] = useState(false);
 
   const toggleTimes = useCallback(() => setTimesShown((shown) => !shown), []);
+  const openSettings = useCallback(() => router.push('/prayer-settings'), []);
 
   const title = (
     <AppText variant="title" accessibilityRole="header">
@@ -69,6 +71,16 @@ export default function PrayerScreen() {
         {timesShown ? (
           <PrayerTimesList day={today} next={next} now={now} clockFormat={clockFormat} />
         ) : null}
+        {/* Easy Mode leaves out the calculation summary, so settings need their own way in. */}
+        <AppButton
+          label={t('prayer.summary.openSettings')}
+          icon="settings-outline"
+          variant="secondary"
+          fullWidth
+          onPress={openSettings}
+          accessibilityHint={t('prayer.summary.openSettingsHint')}
+          testID="prayer-open-settings"
+        />
       </Screen>
     );
   }

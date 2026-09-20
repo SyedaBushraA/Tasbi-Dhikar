@@ -37,7 +37,7 @@ export const AboutSection = memo(function AboutSection() {
         testID="settings-privacy"
       />
       <RowDivider />
-      {/* Attribution for the data and the library the prayer times are built on. */}
+      {/* Attribution for the data, the library and the recording the app ships with. */}
       <SectionBlock testID="settings-credits">
         <AppText variant="label" tone="muted" accessibilityRole="header">
           {t('settings.about.credits')}
@@ -47,6 +47,9 @@ export const AboutSection = memo(function AboutSection() {
         </AppText>
         <AppText variant="body" tone="muted">
           {t('settings.about.prayerLibrary')}
+        </AppText>
+        <AppText variant="body" tone="muted">
+          {t('settings.about.adhanAudio')}
         </AppText>
       </SectionBlock>
     </Section>

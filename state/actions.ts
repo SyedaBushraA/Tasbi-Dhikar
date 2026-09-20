@@ -66,6 +66,22 @@ export function createAppActions(store: AppStore, services: ActionServices): App
   const settings = () => store.getState().settings;
   const prayerActions = createPrayerActions(store, { ...services.prayer, now: services.now });
 
+  const syncReminder = async (): Promise<void> => {
+    const { reminder, language } = settings();
+    const deliverable = await services.reminders.sync(
+      reminder.enabled,
+      reminder.hour,
+      reminder.minute,
+      reminderContent(language),
+    );
+    if (!deliverable && settings().reminder.enabled) {
+      store.dispatch({
+        type: 'updateSettings',
+        patch: { reminder: { ...settings().reminder, enabled: false } },
+      });
+    }
+  };
+
   return {
     ...prayerActions,
 
@@ -126,6 +142,10 @@ export function createAppActions(store: AppStore, services: ActionServices): App
       // The text of prayer notifications shows the time in the chosen format and language.
       if (patch.clockFormat !== undefined || patch.language !== undefined) {
         void prayerActions.syncPrayerAlerts();
+      }
+      // The daily reminder carries translated text too, so it is rewritten.
+      if (patch.language !== undefined) {
+        void syncReminder();
       }
     },
 
@@ -223,20 +243,6 @@ export function createAppActions(store: AppStore, services: ActionServices): App
       return result;
     },
 
-    async syncReminder() {
-      const { reminder, language } = settings();
-      const deliverable = await services.reminders.sync(
-        reminder.enabled,
-        reminder.hour,
-        reminder.minute,
-        reminderContent(language),
-      );
-      if (!deliverable && settings().reminder.enabled) {
-        store.dispatch({
-          type: 'updateSettings',
-          patch: { reminder: { ...settings().reminder, enabled: false } },
-        });
-      }
-    },
+    syncReminder,
   };
 }

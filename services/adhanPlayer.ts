@@ -1,9 +1,11 @@
-import { type AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { type AudioPlayer, createAudioPlayer } from 'expo-audio';
 
 import { ADHAN_AUDIO } from '@/constants/adhanAudio';
-import type { PrayerSettings } from '@/types';
-import type { AdhanChoice } from '@/utils/prayerSchedule';
+import { SALAH_ORDER } from '@/constants/prayer';
+import type { PrayerSettings, SalahName } from '@/types';
+import { adhanChoiceFor } from '@/utils/prayerSchedule';
 
+import { applyAudioMode, releaseAdhanAudioMode } from './audioMode';
 import { notificationKind, setForegroundPresentation } from './notifications';
 
 /*
@@ -55,21 +57,30 @@ function stopWatching(): void {
   }
 }
 
-/** Notices the end of the recording, so the test button switches back to "Play". */
+/**
+ * Notices when the recording stops, so the test button switches back to
+ * "Play". Anything that ends playback counts, not only reaching the end: a
+ * phone call or another app taking over must not leave the timer running.
+ */
 function watchUntilFinished(): void {
   stopWatching();
+  let started = false;
   endTimer = setInterval(() => {
     const current = player;
     if (!current) {
       stopWatching();
+      releaseAdhanAudioMode();
       return;
     }
-    const finished =
-      !current.playing && current.duration > 0 && current.currentTime >= current.duration - 0.25;
-    if (finished) {
-      stopWatching();
-      setState({ playing: false, recording: null });
+    // Playback needs a moment to start; only then does "not playing" mean it ended.
+    if (current.playing) {
+      started = true;
+      return;
     }
+    if (!started) return;
+    stopWatching();
+    releaseAdhanAudioMode();
+    setState({ playing: false, recording: null });
   }, 500);
 }
 
@@ -85,14 +96,10 @@ export function playAdhan(requested: Recording, volume: number): boolean {
   if (!recording || source === null) return false;
 
   try {
+    // Plays even with the ringer switch off: the user asked for the Adhan.
+    applyAudioMode('adhan');
     if (!player || playerSource !== recording) {
       player?.remove();
-      // Plays even with the ringer switch off: the user asked for the Adhan.
-      setAudioModeAsync({
-        playsInSilentMode: true,
-        interruptionMode: 'duckOthers',
-        shouldPlayInBackground: false,
-      }).catch(() => undefined);
       player = createAudioPlayer(source);
       playerSource = recording;
     }
@@ -118,6 +125,8 @@ export function stopAdhan(): void {
   } catch {
     // Already stopped.
   }
+  // The counting sounds may be polite again.
+  releaseAdhanAudioMode();
   setState({ playing: false, recording: null });
 }
 
@@ -126,25 +135,29 @@ export function setAdhanVolume(volume: number): void {
   if (player) player.volume = Math.min(1, Math.max(0, volume));
 }
 
-function adhanOf(data: unknown): AdhanChoice {
+function prayerOf(data: unknown): SalahName | null {
   if (typeof data !== 'object' || data === null) return null;
-  const adhan = (data as Record<string, unknown>).adhan;
-  return adhan === 'standard' || adhan === 'fajr' ? adhan : null;
+  const prayer = (data as Record<string, unknown>).prayer;
+  return SALAH_ORDER.find((name) => name === prayer) ?? null;
 }
 
 /**
  * Decides what happens when a notification arrives while the app is open.
- * A prayer notification with the Adhan plays the recording here, at the
- * user's volume, instead of the notification sound. Call once at start.
+ * A prayer whose Adhan is on plays the recording here, at the user's volume,
+ * instead of the notification sound. What can be played in the app is decided
+ * by the recordings in the app, not by the notification sound files, so the
+ * Adhan is still heard on a build that carries only the playable recording.
+ * Call once at start.
  */
 export function configureForegroundAdhan(getPrayerSettings: () => PrayerSettings): void {
   setForegroundPresentation((data) => {
     if (notificationKind(data) !== 'prayer') return { playSound: false };
-    const adhan = adhanOf(data);
+    const prayer = prayerOf(data);
+    if (prayer === null) return { playSound: true };
+
     const settings = getPrayerSettings();
-    if (adhan && settings.adhanEnabled && playAdhan(adhan, settings.adhanVolume)) {
-      return { playSound: false };
-    }
+    const choice = adhanChoiceFor(prayer, settings, adhanPlaybackAvailable());
+    if (choice && playAdhan(choice, settings.adhanVolume)) return { playSound: false };
     return { playSound: true };
   });
 }

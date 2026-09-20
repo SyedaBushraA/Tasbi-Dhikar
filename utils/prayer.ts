@@ -79,7 +79,7 @@ export function calculatePrayerDay(
 }
 
 /**
- * The first of the five prayers that is still ahead of `now`, looking into
+ * The soonest of the five prayers that is still ahead of `now`, looking into
  * tomorrow after Isha. Null only if no time can be calculated at all.
  */
 export function findNextPrayer(
@@ -88,15 +88,22 @@ export function findNextPrayer(
   now: number,
 ): NextPrayer | null {
   const today = toDayKey(now);
+  let next: NextPrayer | null = null;
+  // The scan starts a day early: when the phone's time zone runs ahead of the
+  // place's, the place is still on yesterday's key and its remaining prayers
+  // would otherwise be skipped. Past times are filtered out below anyway.
   // Two days cover every case; a third guards against a polar day without Fajr.
-  for (let offset = 0; offset <= 2; offset++) {
+  for (let offset = -1; offset <= 2; offset++) {
     const day = calculatePrayerDay(settings, location, shiftDayKey(today, offset));
     for (const name of SALAH_ORDER) {
       const time = day.times[name];
-      if (time !== null && time > now) return { name, time, dayKey: day.dayKey };
+      if (time === null || time <= now) continue;
+      // The earliest wins rather than the first in the list: inside the polar
+      // circles the borrowed times are not always in the usual order.
+      if (next === null || time < next.time) next = { name, time, dayKey: day.dayKey };
     }
   }
-  return null;
+  return next;
 }
 
 export interface Countdown {
@@ -132,6 +139,15 @@ export function formatTimeOfDay(
   if (clockFormat === '24h') return `${pad(hours)}:${minutes}`;
   const hour12 = hours % 12 === 0 ? 12 : hours % 12;
   return `${hour12}:${minutes} ${hours < 12 ? periods.am : periods.pm}`;
+}
+
+/** Three decimals is about 100 m: far more precise than prayer times need. */
+const COORDINATE_DECIMALS = 3;
+
+/** Keeps a stored coordinate no more precise than the prayer calculation needs. */
+export function roundCoordinate(value: number): number {
+  const factor = 10 ** COORDINATE_DECIMALS;
+  return Math.round(value * factor) / factor;
 }
 
 /** Degrees with at most 4 decimals and a hemisphere letter, e.g. "17.3840° N". */

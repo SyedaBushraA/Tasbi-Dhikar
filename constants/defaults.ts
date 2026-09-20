@@ -46,17 +46,17 @@ export const DEFAULT_COUNTER: CounterState = {
   completedSessionId: null,
 };
 
-export const DEFAULT_STATS: StatsData = {
-  daily: {},
-  completedSessions: 0,
-};
+/** A factory, so the empty `daily` map is never shared between states. */
+export function createDefaultStats(): StatsData {
+  return { daily: {}, completedSessions: 0 };
+}
 
 export function createDefaultAppState(): AppState {
   return {
     settings: { ...DEFAULT_SETTINGS, reminder: { ...DEFAULT_SETTINGS.reminder } },
     customDhikr: [],
     counter: { ...DEFAULT_COUNTER },
-    stats: { daily: {}, completedSessions: 0 },
+    stats: createDefaultStats(),
     history: [],
     prayer: createDefaultPrayerSettings(),
   };

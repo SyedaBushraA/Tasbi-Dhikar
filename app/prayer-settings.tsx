@@ -1,7 +1,6 @@
-import { AdhanSection } from '@/components/prayerSettings/AdhanSection';
 import { CalculationSection } from '@/components/prayerSettings/CalculationSection';
 import { LocationSection } from '@/components/prayerSettings/LocationSection';
-import { PrayerNotificationsSection } from '@/components/prayerSettings/PrayerNotificationsSection';
+import { PrayerAlertsSection } from '@/components/prayerSettings/PrayerAlertsSection';
 import { TimeFormatSection } from '@/components/prayerSettings/TimeFormatSection';
 import { Screen } from '@/components/ui';
 import { useAppSelector } from '@/state';
@@ -16,11 +15,7 @@ export default function PrayerSettingsScreen() {
       <LocationSection location={prayer.location} />
       <CalculationSection prayer={prayer} />
       <TimeFormatSection clockFormat={clockFormat} />
-      <PrayerNotificationsSection
-        notifications={prayer.notifications}
-        hasLocation={prayer.location !== null}
-      />
-      <AdhanSection prayer={prayer} />
+      <PrayerAlertsSection prayer={prayer} />
     </Screen>
   );
 }

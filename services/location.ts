@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { nearestCity } from '@/constants/places';
 import type { LocateResult } from '@/state/prayerActions';
 import type { PrayerLocation } from '@/types';
-import { formatCoordinate } from '@/utils/prayer';
+import { formatCoordinate, roundCoordinate } from '@/utils/prayer';
 
 /*
  * The position is read once, when the user asks for it, only to calculate
@@ -16,14 +16,7 @@ import { formatCoordinate } from '@/utils/prayer';
 const LAST_KNOWN_MAX_AGE_MS = 30 * 60 * 1000;
 const LAST_KNOWN_ACCURACY_M = 5000;
 const POSITION_TIMEOUT_MS = 20000;
-/** Three decimals is about 100 m: far more precise than prayer times need. */
-const COORDINATE_DECIMALS = 3;
 const NEAREST_CITY_MAX_KM = 50;
-
-function round(value: number): number {
-  const factor = 10 ** COORDINATE_DECIMALS;
-  return Math.round(value * factor) / factor;
-}
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   return new Promise((resolve, reject) => {
@@ -42,7 +35,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 }
 
 export function toPrayerLocation(latitude: number, longitude: number, now: number): PrayerLocation {
-  const position = { latitude: round(latitude), longitude: round(longitude) };
+  const position = { latitude: roundCoordinate(latitude), longitude: roundCoordinate(longitude) };
   const city = nearestCity(position, NEAREST_CITY_MAX_KM);
   if (city) {
     return {

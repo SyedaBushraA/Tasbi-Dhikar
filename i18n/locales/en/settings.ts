@@ -88,6 +88,7 @@ export const settings = {
     credits: 'With thanks to',
     cityData: 'City data: GeoNames (geonames.org), CC BY 4.0',
     prayerLibrary: 'Prayer time calculation: adhan by Batoul Apps, MIT License',
+    adhanAudio: 'Adhan recording: "Beautiful adhan" by Adam-synagda, Wikimedia Commons, CC0 1.0',
   },
   privacy: {
     title: 'Privacy',

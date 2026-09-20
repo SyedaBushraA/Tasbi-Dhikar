@@ -59,16 +59,6 @@ export function formatDayKey(dayKey: string, locale: string): string {
   }
 }
 
-/** "8:05 PM" style clock time of a timestamp in the given locale. */
-export function formatClockTime(timestamp: number, locale: string): string {
-  const date = new Date(timestamp);
-  try {
-    return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  } catch {
-    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  }
-}
-
 export interface TwelveHourTime {
   /** 1-12 */
   hour12: number;

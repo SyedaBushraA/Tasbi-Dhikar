@@ -170,7 +170,7 @@ export async function syncPrayerAlerts(
       return 'denied';
     }
 
-    const changes = diffPrayerAlerts(scheduled, plan);
+    const changes = diffPrayerAlerts(scheduled, plan, input.now);
     await cancelAll(Notifications, changes.cancel);
     for (const alert of changes.schedule) await schedule(Notifications, alert, input);
     return 'scheduled';

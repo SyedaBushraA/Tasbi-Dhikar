@@ -92,7 +92,12 @@ export async function syncDailyReminder(
     if (!Notifications || !(await hasNotificationPermission())) return false;
 
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    if (scheduled.some((request) => request.identifier === REMINDER_ID)) return true;
+    const existing = scheduled.find((request) => request.identifier === REMINDER_ID);
+    // A reminder scheduled before a language change still carries the old
+    // wording, so it is replaced rather than left alone.
+    if (existing && existing.content.title === content.title && existing.content.body === content.body) {
+      return true;
+    }
     return (await scheduleDailyReminder(hour, minute, content)) === 'scheduled';
   } catch {
     return false;

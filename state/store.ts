@@ -70,7 +70,9 @@ export function createAppStore(storage: AppStorage, options: StoreOptions = {}):
       const payload: Partial<AppState> = {};
       for (const slice of slices) Object.assign(payload, { [slice]: snapshot[slice] });
 
-      const saved = await storage.save(payload);
+      // A storage that throws instead of reporting false must not poison the
+      // queue: every later write would be skipped without anyone noticing.
+      const saved = await storage.save(payload).catch(() => false);
       if (!saved) slices.forEach((slice) => dirty.add(slice)); // retried with the next write
       setStatus({ saveFailed: !saved });
     });

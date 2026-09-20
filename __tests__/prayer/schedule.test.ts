@@ -95,19 +95,26 @@ describe('planPrayerAlerts', () => {
     expect(plan[0]).toMatchObject({ prayer: 'fajr', dayKey: DAY_KEY, time: requireTime(day, 'fajr') });
   });
 
-  it('skips a prayer that is past or less than half a minute away', () => {
+  it('skips a prayer whose time has passed', () => {
     const day = calculatePrayerDay(enabled, PLACE, DAY_KEY);
     const fajr = requireTime(day, 'fajr');
 
-    const tooClose = planPrayerAlerts(enabled, fajr - 29_000, options());
-    expect(tooClose.some((alert) => alert.time === fajr)).toBe(false);
-    expect(tooClose[0]?.prayer).toBe('dhuhr');
-
     const past = planPrayerAlerts(enabled, fajr + MINUTE, options());
     expect(past.some((alert) => alert.time === fajr)).toBe(false);
+    expect(past[0]?.prayer).toBe('dhuhr');
 
-    const justInTime = planPrayerAlerts(enabled, fajr - 30_000, options());
-    expect(justInTime[0]).toMatchObject({ prayer: 'fajr', dayKey: DAY_KEY, time: fajr });
+    const exactly = planPrayerAlerts(enabled, fajr, options());
+    expect(exactly.some((alert) => alert.time === fajr)).toBe(false);
+  });
+
+  /* The alert of a prayer that is seconds away is already pending; keeping it
+     in the plan is what stops the next sync from cancelling it. */
+  it('still plans a prayer that is only seconds away', () => {
+    const day = calculatePrayerDay(enabled, PLACE, DAY_KEY);
+    const fajr = requireTime(day, 'fajr');
+
+    const close = planPrayerAlerts(enabled, fajr - 29_000, options());
+    expect(close[0]).toMatchObject({ prayer: 'fajr', dayKey: DAY_KEY, time: fajr });
   });
 
   it('never plans further ahead than it was asked to', () => {
@@ -224,24 +231,24 @@ describe('diffPrayerAlerts', () => {
   const identifiers = plan.map((alert) => alert.identifier);
 
   it('schedules everything when nothing is scheduled yet', () => {
-    expect(diffPrayerAlerts([], plan)).toEqual({ cancel: [], schedule: plan });
+    expect(diffPrayerAlerts([], plan, NOW)).toEqual({ cancel: [], schedule: plan });
   });
 
   it('does nothing when the scheduled alerts already match', () => {
-    expect(diffPrayerAlerts(identifiers, plan)).toEqual({ cancel: [], schedule: [] });
+    expect(diffPrayerAlerts(identifiers, plan, NOW)).toEqual({ cancel: [], schedule: [] });
   });
 
   it('leaves notifications that are not prayer times alone', () => {
-    const changes = diffPrayerAlerts(['daily-dhikr-reminder', ...identifiers], plan);
+    const changes = diffPrayerAlerts(['daily-dhikr-reminder', ...identifiers], plan, NOW);
     expect(changes).toEqual({ cancel: [], schedule: [] });
 
-    expect(diffPrayerAlerts(['daily-dhikr-reminder'], []).cancel).toEqual([]);
+    expect(diffPrayerAlerts(['daily-dhikr-reminder'], [], NOW).cancel).toEqual([]);
   });
 
   it('cancels what no longer applies and adds what is missing', () => {
     const stale = `${PRAYER_NOTIFICATION_PREFIX}2026-09-01-fajr-1-plain-12hen`;
     const kept = identifiers.slice(0, 3);
-    const changes = diffPrayerAlerts([stale, 'daily-dhikr-reminder', ...kept], plan);
+    const changes = diffPrayerAlerts([stale, 'daily-dhikr-reminder', ...kept], plan, NOW);
 
     expect(changes.cancel).toEqual([stale]);
     expect(changes.schedule.map((alert: PlannedPrayerAlert) => alert.identifier)).toEqual(
@@ -250,6 +257,19 @@ describe('diffPrayerAlerts', () => {
   });
 
   it('cancels everything when the plan is empty', () => {
-    expect(diffPrayerAlerts(identifiers, [])).toEqual({ cancel: identifiers, schedule: [] });
+    expect(diffPrayerAlerts(identifiers, [], NOW)).toEqual({ cancel: identifiers, schedule: [] });
+  });
+
+  it('leaves a prayer that is seconds away alone instead of replacing it', () => {
+    const day = calculatePrayerDay(enabled, PLACE, DAY_KEY);
+    const fajr = requireTime(day, 'fajr');
+    const now = fajr - 29_000;
+    const imminent = planPrayerAlerts(enabled, now, options()).find((alert) => alert.time === fajr);
+    const identifier = imminent?.identifier ?? '';
+
+    // Too late to add a new one: it would arrive after the prayer.
+    expect(diffPrayerAlerts([], [imminent as PlannedPrayerAlert], now).schedule).toEqual([]);
+    // Already pending, so it survives even a plan that no longer wants it.
+    expect(diffPrayerAlerts([identifier], [], now).cancel).toEqual([]);
   });
 });

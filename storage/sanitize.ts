@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS,
   MAX_HISTORY_RECORDS,
   createDefaultPrayerSettings,
+  createDefaultStats,
 } from '@/constants/defaults';
 import { DEFAULT_DHIKR_ID, MAX_CUSTOM_DHIKR, MAX_DHIKR_NAME_LENGTH } from '@/constants/dhikr';
 import {
@@ -210,7 +211,7 @@ export function sanitizeCounter(raw: unknown): CounterState {
 }
 
 export function sanitizeStats(raw: unknown): StatsData {
-  if (!isRecord(raw)) return { daily: {}, completedSessions: 0 };
+  if (!isRecord(raw)) return createDefaultStats();
 
   const daily: Record<string, number> = {};
   if (isRecord(raw.daily)) {

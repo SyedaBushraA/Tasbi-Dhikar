@@ -101,7 +101,9 @@ To test quickly: open Prayer Settings, give a prayer that is less than an hour a
 
 ## Adhan audio
 
-No Adhan recording is bundled with this repository. **Only add recordings you have the right to distribute** (your own, or one with a licence that allows it). Nothing is downloaded at runtime and no remote URL is used: an Adhan either sits in the app or does not exist for the app.
+One recording is bundled: *Beautiful adhan* by Adam-synagda from Wikimedia Commons, released under the Creative Commons CC0 1.0 Universal Public Domain Dedication, as `assets/sounds/adhan.mp3` (mono, 96 kbps) with `adhan_short.wav` as its first 29.5 seconds for iPhone notifications. It is credited in Settings › About. There is no separate Fajr recording, so the "Separate Fajr Adhan" setting stays hidden.
+
+Nothing is downloaded at runtime and no remote URL is used: an Adhan either sits in the app or does not exist for the app. To replace or extend the set, **only add recordings you have the right to distribute** (your own, or one with a licence that allows it), and update the credit in `i18n/locales/en/settings.ts`.
 
 1. Put the files in `assets/sounds`:
    - `adhan.mp3` — the full recording (Android notification sound, and playback inside the app)
@@ -116,6 +118,7 @@ What the user hears:
 - **App closed**: the Adhan is the notification's sound. The phone decides the volume and how long it plays; iOS plays at most 30 seconds, and some Android phones shorten long sounds. Full-length playback in the background cannot be promised on every device.
 - **App open**: the app plays the full recording itself, at the volume set with the Adhan volume slider. The slider has no effect on the notification sound.
 - **Adhan off, or no recording bundled**: prayer notifications use the normal notification sound. Everything else works exactly the same.
+- **Fajr**: without `adhan_fajr.mp3` the standard recording is used for Fajr too.
 
 ## Adding a language
 
